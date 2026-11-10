@@ -4,7 +4,7 @@ import { agentConfig, keysMissing } from "@/lib/agent";
 export async function POST(req: Request) {
   try {
     if (keysMissing()) {
-      return Response.json({ error: "Missing ANTHROPIC_API_KEY or PayPal credentials" }, { status: 503 });
+      return Response.json({ error: "Missing GOOGLE_GENERATIVE_AI_API_KEY or PayPal credentials" }, { status: 503 });
     }
     const { messages } = await req.json();
     const result = streamText({ ...agentConfig(), messages });

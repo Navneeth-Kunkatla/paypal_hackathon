@@ -7,7 +7,7 @@ export async function POST() {
     const overdue = (await listInvoices()).filter((i) => i.daysOverdue > 0);
     if (!overdue.length) return Response.json({ ok: true, reminded: 0, summary: "Nothing is overdue." });
     if (keysMissing()) {
-      return Response.json({ error: "Missing ANTHROPIC_API_KEY or PayPal credentials" }, { status: 503 });
+      return Response.json({ error: "Missing GOOGLE_GENERATIVE_AI_API_KEY or PayPal credentials" }, { status: 503 });
     }
     const lines = overdue
       .map((i) => `- id ${i.id}, number ${i.number}, client ${i.clientName}, ${i.amount} ${i.currency}, ${i.daysOverdue} days overdue`)

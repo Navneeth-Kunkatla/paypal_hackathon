@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     return Response.json({ error }, { status: 400 });
   }
   if (keysMissing()) {
-    return Response.json({ error: "Missing ANTHROPIC_API_KEY or PayPal credentials" }, { status: 503 });
+    return Response.json({ error: "Missing GOOGLE_GENERATIVE_AI_API_KEY or PayPal credentials" }, { status: 503 });
   }
   const j = parsed.data;
   try {

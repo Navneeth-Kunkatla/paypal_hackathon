@@ -14,7 +14,7 @@ collections loop for them.
    uses (Trello, Notion, Google Sheets). Zapier posts it to Settle. The
    freelancer can also just type: "Invoice Acme $1,200 for the logo, due in 14
    days."
-2. **Agent drafts the invoice.** Claude, using the PayPal Agent Toolkit, builds
+2. **Agent drafts the invoice.** Gemini, using the PayPal Agent Toolkit, builds
    a real PayPal invoice from the job details.
 3. **Approval gate.** An autonomy setting decides: auto-send under a limit the
    freelancer sets, otherwise wait for one click. The agent never moves past
@@ -40,7 +40,7 @@ collections loop for them.
 | Piece | Choice | Why |
 |---|---|---|
 | App | Next.js (TypeScript), one app for UI and API | One deploy, one repo |
-| Agent | Vercel AI SDK + Claude | Toolkit has a ready adapter |
+| Agent | Vercel AI SDK + Gemini | Toolkit has a ready adapter |
 | PayPal | `@paypal/agent-toolkit` (invoices, reporting, disputes), sandbox | Official, 20 invoice tools |
 | Data | PayPal is the source of truth; a small local activity log | No database to run |
 | Dashboard | AG Grid Community | Sponsor prize, low risk |
@@ -69,7 +69,7 @@ Cut line if time runs out: steps 1 to 4 plus 8 are a valid submission.
 ## Needed from the team
 
 - PayPal sandbox Client ID and Secret, in `.env.local` (never committed).
-- An AI model API key (Anthropic preferred).
+- A Gemini API key (free tier) from Google AI Studio.
 - A Zapier account and a Postman account.
 - A Render account, at deploy time.
 - Someone to record the video and submit on Devpost.

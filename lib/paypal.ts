@@ -79,7 +79,7 @@ function toInvoice(r: any): Invoice {
   return {
     id: r.id,
     number: r.detail?.invoice_number ?? "",
-    clientName: name?.full_name ?? [name?.given_name, name?.surname].filter(Boolean).join(" "),
+    clientName: name?.full_name || [name?.given_name, name?.surname].filter(Boolean).join(" ") || billing?.business_name || billing?.email_address || "",
     clientEmail: billing?.email_address ?? "",
     amount: Number(r.amount?.value ?? 0),
     currency: r.amount?.currency_code ?? r.detail?.currency_code ?? "USD",
@@ -118,4 +118,23 @@ export async function remindInvoice(id: string): Promise<void> {
     method: "POST",
     body: JSON.stringify({ send_to_recipient: true }),
   });
+}
+
+export async function createInvoice(i: {
+  clientName: string;
+  clientEmail: string;
+  description: string;
+  amount: number;
+  currency: string;
+  dueDate: string; // YYYY-MM-DD
+}): Promise<Invoice> {
+  const j = (await pp("/v2/invoicing/invoices", {
+    method: "POST",
+    body: JSON.stringify({
+      detail: { currency_code: i.currency, payment_term: { due_date: i.dueDate } },
+      primary_recipients: [{ billing_info: { business_name: i.clientName, email_address: i.clientEmail } }],
+      items: [{ name: i.description, quantity: "1", unit_amount: { currency_code: i.currency, value: i.amount.toFixed(2) } }],
+    }),
+  })) as { href: string };
+  return getInvoice(j.href.split("/").pop()!);
 }
