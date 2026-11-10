@@ -1,0 +1,30 @@
+# Render Blueprint: one free web service. Secrets are prompted for in the dashboard (sync: false).
+# `next start` reads the PORT env var Render sets (Next docs: "default: 3000, env: PORT"), so no -p flag is needed.
+# Sandbox only: do not put live PayPal credentials here, the app has no user auth.
+services:
+  - type: web
+    name: settle
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_GENERATIVE_AI_API_KEY
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: ZAPIER_HOOK_SECRET
+        sync: false
+      - key: ZAPIER_PAID_HOOK_URL
+        sync: false
+      - key: AI_MODEL
+        value: gemini-3.5-flash-lite
+      - key: AUTO_SEND_LIMIT
+        value: "500"

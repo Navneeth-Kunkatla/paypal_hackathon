@@ -1,0 +1,63 @@
+# Zapier setup
+
+Two Zaps, built-in Zapier pieces only.
+
+| Zap | Direction | Needs a public URL? |
+|---|---|---|
+| A. Job done -> Settle invoice | Zapier calls Settle (`POST /api/jobs`) | Yes. Use your Render URL (or a tunnel). |
+| B. Invoice paid -> notification | Settle calls Zapier (`ZAPIER_PAID_HOOK_URL`) | No. Works from localhost. |
+
+Set `ZAPIER_HOOK_SECRET` in your environment first (any long random string). Settle returns 503 if it is unset.
+
+## Zap A: job marked done creates and sends an invoice
+
+1. Trigger: pick the tool you track jobs in. Two examples:
+   - Google Sheets, "New or Updated Spreadsheet Row". Columns: client_name, client_email, amount, description, due_days, Status. Add a Filter step: continue only if Status is exactly `Done`.
+   - Trello, "Card Moved to List", list = Done. Map the card title to `description`; put client and amount in the card description or a custom field.
+2. Action: "Webhooks by Zapier", event "POST".
+   - URL: `https://<your-app>.onrender.com/api/jobs`
+   - Payload Type: `json`
+   - Data (map from your trigger):
+
+     | Field | Required | Notes |
+     |---|---|---|
+     | `client_name` | yes | |
+     | `client_email` | yes | valid email |
+     | `amount` | yes | number above 0 (strings like "1200" are accepted) |
+     | `description` | yes | what is being billed |
+     | `due_days` | no | 0 to 120, default 14 |
+     | `currency` | no | 3 letters, default USD |
+
+   - Headers: `x-settle-secret` = the value of `ZAPIER_HOOK_SECRET`.
+3. Test the action. Expected: `{"ok":true,"summary":"..."}`. A 401 means the secret does not match; a 400 lists the invalid fields.
+4. Turn the Zap on. Amounts over the auto-send limit stay as drafts and appear in the dashboard for approval.
+
+The same call from a terminal:
+
+```bash
+curl -X POST "$APP/api/jobs" -H "Content-Type: application/json" -H "x-settle-secret: $ZAPIER_HOOK_SECRET" \
+  -d '{"client_name":"Acme Co","client_email":"billing@acme.test","amount":300,"description":"Logo design","due_days":14}'
+```
+
+## Zap B: invoice paid triggers a notification
+
+1. Trigger: "Webhooks by Zapier", event "Catch Hook". Copy the Custom Webhook URL (`https://hooks.zapier.com/hooks/catch/...`).
+2. Put that URL in `ZAPIER_PAID_HOOK_URL` (`.env.local` locally, or the Render dashboard) and restart.
+3. Make Settle send one sample: pay a sandbox invoice (see README, "Try it"), or open the dashboard after paying. Back in Zapier, click "Test trigger" and pick the request.
+4. Action: anything built in, for example Slack "Send Channel Message" with `text`, Gmail "Send Email", or Google Sheets "Create Spreadsheet Row".
+
+Payload Settle POSTs (JSON, from `lib/paid.ts` and `lib/zapier.ts`):
+
+```json
+{
+  "event": "invoice.paid",
+  "invoiceId": "INV2-XXXX-XXXX-XXXX-XXXX",
+  "number": "0006",
+  "client": "Northwind Studio",
+  "amount": 1200,
+  "currency": "USD",
+  "text": "Northwind Studio paid 0006, USD 1200"
+}
+```
+
+It fires once per invoice, when Settle first sees it become PAID (dashboard polling every 10 seconds, or the PayPal webhook). A failed call is logged in the activity feed as "Zapier notification failed" and does not break anything. Call timeout is 5 seconds.

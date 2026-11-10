@@ -51,4 +51,9 @@ export type Health = {
 // POST /api/webhooks/paypal       -> { ok: true }   PayPal webhook, signature verified (503 if PAYPAL_WEBHOOK_ID unset)
 // POST /api/jobs                  -> { ok: true, summary }   Zapier inbound, header x-settle-secret
 // POST /api/chase                 -> { ok: true, reminded, summary }   remind all overdue invoices
+// GET  /api/invoices/[id]         -> { invoice: Invoice, qr: string | null }   qr is a PNG data URL, null for drafts or on failure
+// POST /api/invoices/[id]/cancel  -> { ok: true }   cancels a sent invoice, deletes a DRAFT
+// GET  /api/automations           -> { jobsHook: boolean, paidHook: boolean, paypalWebhook: boolean }   config flags only
+// POST /api/automations/test-job  -> { ok: true, summary }   body like /api/jobs, no secret needed
+// POST /api/automations/test-paid -> { ok: true, result: "sent" | "unconfigured" | "failed" }
 // Errors: non-2xx with { error: string }

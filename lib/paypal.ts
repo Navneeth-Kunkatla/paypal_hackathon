@@ -24,7 +24,7 @@ export async function getToken(): Promise<string> {
   return cached.token;
 }
 
-async function pp(path: string, init: RequestInit = {}): Promise<unknown> {
+export async function pp(path: string, init: RequestInit = {}): Promise<unknown> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
@@ -118,6 +118,30 @@ export async function remindInvoice(id: string): Promise<void> {
     method: "POST",
     body: JSON.stringify({ send_to_recipient: true }),
   });
+}
+
+// PayPal answers multipart/form-data with the PNG as a bare base64 block; null on any failure.
+export async function getQr(id: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${BASE}/v2/invoicing/invoices/${encodeURIComponent(id)}/generate-qr-code`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${await getToken()}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ width: 300, height: 300 }),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const b64 = (await res.text()).match(/\r?\n\r?\n([A-Za-z0-9+/=]+)\r?\n--/)?.[1];
+    return b64 ? `data:image/png;base64,${b64}` : null;
+  } catch {
+    return null;
+  }
+}
+
+// Drafts cannot be cancelled, only deleted.
+export async function cancelInvoice(id: string, status: InvoiceStatus): Promise<void> {
+  const path = `/v2/invoicing/invoices/${encodeURIComponent(id)}`;
+  if (status === "DRAFT") await pp(path, { method: "DELETE" });
+  else await pp(`${path}/cancel`, { method: "POST", body: JSON.stringify({ send_to_invoicer: false, send_to_recipient: false }) });
 }
 
 export async function createInvoice(i: {

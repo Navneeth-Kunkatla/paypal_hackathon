@@ -31,7 +31,7 @@ const theme = themeQuartz.withParams({
   fontSize: 13.5,
 });
 
-const PILL: Record<InvoiceStatus, { label: string; bg: string; fg: string }> = {
+export const PILL: Record<InvoiceStatus, { label: string; bg: string; fg: string }> = {
   DRAFT: { label: "Draft", bg: "--draft-bg", fg: "--draft-fg" },
   SENT: { label: "Sent", bg: "--info-bg", fg: "--info-fg" },
   PAID: { label: "Paid", bg: "--paid-bg", fg: "--paid-fg" },
@@ -40,7 +40,17 @@ const PILL: Record<InvoiceStatus, { label: string; bg: string; fg: string }> = {
   OTHER: { label: "Other", bg: "--neutral-bg", fg: "--neutral-fg" },
 };
 
-type Ctx = { act: (id: string, verb: "send" | "remind") => void; pending: Set<string> };
+export function StatusPill({ inv }: { inv: Invoice }) {
+  const s = PILL[inv.status] ?? PILL.OTHER;
+  const late = inv.daysOverdue > 0 && inv.status !== "PAID" && inv.status !== "CANCELLED";
+  return (
+    <span className="pill" style={late ? { background: "var(--warn-bg)", color: "var(--warn-fg)" } : { background: `var(${s.bg})`, color: `var(${s.fg})` }}>
+      {late ? `Overdue ${inv.daysOverdue}d` : s.label}
+    </span>
+  );
+}
+
+type Ctx = { act: (id: string, verb: "send" | "remind") => void; pending: Set<string>; open: (id: string) => void };
 type P = ICellRendererParams<Invoice, unknown, Ctx>;
 
 function Actions({ data, context }: P) {
@@ -69,10 +79,24 @@ function Actions({ data, context }: P) {
 
 function NoRows(props: CustomNoRowsOverlayProps) {
   void props;
-  return <p className="text-sm" style={{ color: "var(--muted)" }}>No invoices yet. Ask the agent to create one.</p>;
+  const steps = [
+    ["Ask the agent", "Type something like \"Invoice Acme $400 for the logo, due in 14 days.\""],
+    ["Approve", "Invoices over your auto-send limit wait for one click from you."],
+    ["Get paid", "Settle sends the PayPal invoice, chases late ones and tells you when it is paid."],
+  ];
+  return (
+    <div className="px-4 py-6 text-left">
+      <p className="mb-3 text-sm font-semibold">No invoices yet. Here is how it works.</p>
+      <ol className="m-0 flex list-none flex-col gap-2 p-0 text-sm" style={{ color: "var(--fg-2)" }}>
+        {steps.map(([t, d], i) => (
+          <li key={t}><span className="font-semibold">{i + 1}. {t}.</span> {d}</li>
+        ))}
+      </ol>
+    </div>
+  );
 }
 
-const fmt = (n: number, currency: string) => {
+export const fmt = (n: number, currency: string) => {
   try { return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(n); }
   catch { return `${n.toFixed(2)} ${currency}`; }
 };
@@ -85,7 +109,8 @@ const fmtDue = (v: string | null) => {
 
 const rank = (i: Invoice) => (i.status === "DRAFT" ? 0 : 1);
 
-export default function InvoiceGrid({ invoices, act, pending }: { invoices: Invoice[]; act: Ctx["act"]; pending: Set<string> }) {
+export default function InvoiceGrid({ invoices, act, pending, open, onChase, chasing }: { invoices: Invoice[]; act: Ctx["act"]; pending: Set<string>; open: Ctx["open"]; onChase: () => void; chasing: boolean }) {
+  const overdue = invoices.filter((i) => i.daysOverdue > 0).length;
   // Default order: drafts first, then most overdue. Users can re-sort via headers.
   const rows = useMemo(
     () => [...invoices].sort((a, b) => rank(a) - rank(b) || b.daysOverdue - a.daysOverdue),
@@ -95,9 +120,9 @@ export default function InvoiceGrid({ invoices, act, pending }: { invoices: Invo
     { field: "number", headerName: "Invoice", width: 84, cellClass: "num", cellStyle: { color: "var(--muted)" } as CellStyle },
     {
       field: "clientName", headerName: "Client", flex: 1, minWidth: 130,
-      cellRenderer: ({ data }: P) => data && (
-        <div className="flex h-full flex-col justify-center leading-tight">
-          <div className="truncate font-semibold">{data.clientName}</div>
+      cellRenderer: ({ data, context }: P) => data && (
+        <div className="flex h-full flex-col items-start justify-center leading-tight">
+          <button type="button" data-open={data.id} className="max-w-full truncate text-left font-semibold" aria-label={`Open details for invoice ${data.number}, ${data.clientName}`} onClick={() => context.open(data.id)}>{data.clientName}</button>
           <div className="truncate text-xs" style={{ color: "var(--muted)" }}>{data.clientEmail}</div>
         </div>
       ),
@@ -105,18 +130,7 @@ export default function InvoiceGrid({ invoices, act, pending }: { invoices: Invo
     { field: "amount", headerName: "Amount", width: 110, type: "rightAligned", cellClass: "num", cellStyle: { fontWeight: 600 } as CellStyle, valueFormatter: (p) => (p.data ? fmt(p.data.amount, p.data.currency) : "") },
     {
       field: "status", headerName: "Status", width: 124,
-      cellRenderer: ({ data }: P) => {
-        if (!data) return null;
-        const s = PILL[data.status] ?? PILL.OTHER;
-        const late = data.daysOverdue > 0 && data.status !== "PAID" && data.status !== "CANCELLED";
-        return (
-          <div className="flex h-full items-center">
-            <span className="pill" style={late ? { background: "var(--warn-bg)", color: "var(--warn-fg)" } : { background: `var(${s.bg})`, color: `var(${s.fg})` }}>
-              {late ? `Overdue ${data.daysOverdue}d` : s.label}
-            </span>
-          </div>
-        );
-      },
+      cellRenderer: ({ data }: P) => data && <div className="flex h-full items-center"><StatusPill inv={data} /></div>,
     },
     { field: "dueDate", headerName: "Due", width: 84, cellClass: "num", valueFormatter: (p) => fmtDue(p.value) },
     { field: "nextAction", headerName: "Agent's next move", flex: 1, minWidth: 130, tooltipField: "nextAction", cellStyle: { color: "var(--fg-2)" } as CellStyle },
@@ -127,7 +141,12 @@ export default function InvoiceGrid({ invoices, act, pending }: { invoices: Invo
     <section aria-labelledby="inv-h" className="card overflow-hidden">
       <div className="card-h justify-between">
         <h2 id="inv-h">Invoices</h2>
-        <span className="text-xs" style={{ color: "var(--muted)" }}>Live from PayPal</span>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-xs sm:inline" style={{ color: "var(--muted)" }}>Live from PayPal</span>
+          <button className="btn" disabled={overdue === 0 || chasing} aria-busy={chasing} onClick={onChase}>
+            {chasing ? "Chasing…" : overdue === 0 ? "Nothing overdue" : `Chase overdue (${overdue})`}
+          </button>
+        </div>
       </div>
       <AgGridReact<Invoice>
         theme={theme}
@@ -137,7 +156,11 @@ export default function InvoiceGrid({ invoices, act, pending }: { invoices: Invo
         defaultColDef={{ sortable: true, resizable: true }}
         getRowId={(p) => p.data.id}
         getRowStyle={(p) => (p.data?.status === "DRAFT" ? { background: "var(--draft-row)" } : undefined)}
-        context={{ act, pending } satisfies Ctx}
+        context={{ act, pending, open } satisfies Ctx}
+        onRowClicked={(e) => {
+          const t = e.event?.target as HTMLElement | null;
+          if (e.data && !t?.closest("button, a")) open(e.data.id);
+        }}
         noRowsOverlayComponent={NoRows}
         suppressCellFocus
       />
