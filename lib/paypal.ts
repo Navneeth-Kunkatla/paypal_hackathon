@@ -54,7 +54,7 @@ const STATUS: Record<string, InvoiceStatus> = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toInvoice(r: any): Invoice {
+export function toInvoice(r: any): Invoice {
   const status = STATUS[r.status] ?? "OTHER";
   const due: string | null = r.detail?.payment_term?.due_date ?? null;
   let daysOverdue = 0;
@@ -96,10 +96,16 @@ function toInvoice(r: any): Invoice {
   };
 }
 
-export async function listInvoices(): Promise<Invoice[]> {
+// Raw PayPal records: one fetch path for the invoice list and the client roll-up.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function listRawInvoices(): Promise<any[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const j = (await pp("/v2/invoicing/invoices?page_size=50&fields=all")) as any;
-  return (j.items ?? []).map(toInvoice);
+  return j.items ?? [];
+}
+
+export async function listInvoices(): Promise<Invoice[]> {
+  return (await listRawInvoices()).map(toInvoice);
 }
 
 export async function getInvoice(id: string): Promise<Invoice> {

@@ -372,6 +372,67 @@
               ]
             }
           }
+        },
+        {
+          "name": "List clients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200/500\", () => pm.expect(pm.response.code).to.be.oneOf([200, 500]));",
+                  "pm.test(\"shape\", () => { const j = pm.response.json(); if (pm.response.code === 200) pm.expect(j.clients).to.be.an(\"array\"); else pm.expect(j.error).to.be.a(\"string\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "description": "Per-client roll-up of PayPal invoices.",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Summarize clients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200/502/503\", () => pm.expect(pm.response.code).to.be.oneOf([200, 502, 503]));",
+                  "pm.test(\"shape\", () => { const j = pm.response.json(); if (pm.response.code === 200) pm.expect(j.summary).to.be.a(\"string\"); else pm.expect(j.error).to.be.a(\"string\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "description": "One Gemini call over the client stats. Plain text.",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "summary"
+              ]
+            }
+          }
         }
       ]
     },

@@ -22,6 +22,22 @@ export type Invoice = {
   nextAction: string; // what the agent plans to do next, plain English
 };
 
+export type ClientRating = "Pays on time" | "Slow payer" | "At risk" | "New";
+
+export type Client = {
+  name: string;
+  email: string;
+  invoices: number; // non-cancelled, non-draft
+  billed: number;
+  paid: number;
+  outstanding: number; // billed - paid
+  overdue: number; // sum of invoices with daysOverdue > 0
+  maxDaysOverdue: number;
+  avgDaysToPay: number | null; // null when the PayPal list gives no payment date
+  currency: string;
+  rating: ClientRating;
+};
+
 export type ActivityEvent = {
   id: string;
   at: string; // ISO timestamp
@@ -56,4 +72,6 @@ export type Health = {
 // GET  /api/automations           -> { jobsHook: boolean, paidHook: boolean, paypalWebhook: boolean }   config flags only
 // POST /api/automations/test-job  -> { ok: true, summary }   body like /api/jobs, no secret needed
 // POST /api/automations/test-paid -> { ok: true, result: "sent" | "unconfigured" | "failed" }
+// GET  /api/clients               -> { clients: Client[] }   per-client roll-up of PayPal invoices
+// POST /api/clients/summary       -> { summary: string }   one Gemini call over the client stats (503 if keys missing, 502 on model error)
 // Errors: non-2xx with { error: string }

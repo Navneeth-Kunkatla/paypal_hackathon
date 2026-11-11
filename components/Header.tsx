@@ -7,6 +7,7 @@ import type { Settings } from "@/lib/types";
 
 const NAV = [
   { href: "/", label: "Invoices" },
+  { href: "/clients", label: "Clients" },
   { href: "/automations", label: "Automations" },
 ];
 

@@ -17,6 +17,8 @@ The loop: job done -> draft -> approval gate -> send -> chase -> paid -> notify.
 6. **Paid.** Settle notices the PAID status (dashboard polling, or PayPal's webhook), updates the grid and logs it.
 7. **Notify.** Settle calls your Zapier Catch Hook so Slack, email or a spreadsheet row can follow.
 
+**Clients page.** `/clients` rolls invoices up per client (billed, paid, outstanding, overdue, rating) with a one-click agent summary of who to chase first.
+
 **Ask your money.** The chat answers from live PayPal data: "Who owes me the most?", "What is overdue?".
 
 ## How PayPal is used
@@ -129,6 +131,8 @@ The seed creates 2 overdue invoices (about 5 and 25 days), 2 sent and not yet du
 | `/api/invoices/[id]/send` | POST | Human approval: send a draft |
 | `/api/invoices/[id]/remind` | POST | Send a PayPal reminder |
 | `/api/invoices/[id]/cancel` | POST | Cancel an invoice |
+| `/api/clients` | GET | Per-client roll-up of PayPal invoices: billed, paid, outstanding, overdue, rating |
+| `/api/clients/summary` | POST | One Gemini call: who to chase first, who is reliable (no tools) |
 | `/api/activity` | GET | Activity log, newest first |
 | `/api/settings` | GET, PUT | Read or set `{ "autoSendLimit": number }` |
 | `/api/chat` | POST | Agent chat (AI SDK data stream) |

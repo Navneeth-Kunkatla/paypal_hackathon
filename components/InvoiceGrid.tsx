@@ -8,7 +8,7 @@ import type { Invoice, InvoiceStatus } from "@/lib/types";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 // Grid colours come from the same CSS variables as the page, so light/dark follow prefers-color-scheme.
-const theme = themeQuartz.withParams({
+export const theme = themeQuartz.withParams({
   backgroundColor: "var(--surface)",
   foregroundColor: "var(--fg)",
   headerBackgroundColor: "var(--surface)",
