@@ -1,6 +1,6 @@
 # Devpost submission text
 
-Links: live demo https://settle-8njj.onrender.com (free tier; first load can take about a minute). Video: [ADD YOUTUBE LINK]. Repo: [ADD PUBLIC REPO LINK].
+Links: live demo https://settle-8njj.onrender.com (free tier; first load can take about a minute). Video: [ADD YOUTUBE LINK]. Repo: https://github.com/Navneeth-Kunkatla/paypal_hackathon.
 
 ## Name
 Settle
