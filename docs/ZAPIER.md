@@ -1,6 +1,6 @@
 # Zapier setup
 
-Two Zaps, built-in Zapier pieces only.
+Two Zaps, both live and tested on the demo. Webhooks by Zapier is a premium Zapier app: it needs a paid plan or works on the 14-day trial.
 
 | Zap | Direction | Needs a public URL? |
 |---|---|---|
@@ -11,9 +11,8 @@ Set `ZAPIER_HOOK_SECRET` in your environment first (any long random string). Set
 
 ## Zap A: job marked done creates and sends an invoice
 
-1. Trigger: pick the tool you track jobs in. Two examples:
-   - Google Sheets, "New or Updated Spreadsheet Row". Columns: client_name, client_email, amount, description, due_days, Status. Add a Filter step: continue only if Status is exactly `Done`.
-   - Trello, "Card Moved to List", list = Done. Map the card title to `description`; put client and amount in the card description or a custom field.
+1. Trigger: a Zapier Table named "Settle Jobs" with fields `client_name`, `client_email`, `description`, `amount`, `due_days` and `Status`. Use the Tables trigger for an updated record, then add a Filter step: continue only if `Status` is exactly `Done`. Mark a row Done and the Zap runs.
+   - Alternatives, one line each: Google Sheets "New or Updated Spreadsheet Row" with the same columns, or Trello "Card Moved to List" (list = Done, card title to `description`).
 2. Action: "Webhooks by Zapier", event "POST".
    - URL: `https://<your-app>.onrender.com/api/jobs`
    - Payload Type: `json`
@@ -44,7 +43,7 @@ curl -X POST "$APP/api/jobs" -H "Content-Type: application/json" -H "x-settle-se
 1. Trigger: "Webhooks by Zapier", event "Catch Hook". Copy the Custom Webhook URL (`https://hooks.zapier.com/hooks/catch/...`).
 2. Put that URL in `ZAPIER_PAID_HOOK_URL` (`.env.local` locally, or the Render dashboard) and restart.
 3. Make Settle send one sample: pay a sandbox invoice (see README, "Try it"), or open the dashboard after paying. Back in Zapier, click "Test trigger" and pick the request.
-4. Action: anything built in, for example Slack "Send Channel Message" with `text`, Gmail "Send Email", or Google Sheets "Create Spreadsheet Row".
+4. Action: "Email by Zapier" is what the demo uses (to the freelancer, with `text` as the body). Others work too, for example Slack "Send Channel Message" with `text`, Gmail "Send Email", or Google Sheets "Create Spreadsheet Row".
 
 Payload Settle POSTs (JSON, from `lib/paid.ts` and `lib/zapier.ts`):
 
@@ -60,4 +59,4 @@ Payload Settle POSTs (JSON, from `lib/paid.ts` and `lib/zapier.ts`):
 }
 ```
 
-It fires once per invoice, when Settle first sees it become PAID (dashboard polling every 10 seconds, or the PayPal webhook). A failed call is logged in the activity feed as "Zapier notification failed" and does not break anything. Call timeout is 5 seconds.
+It fires once per invoice, when Settle first sees it become PAID (dashboard polling every 10 seconds, or the PayPal webhook). A failed call is logged in the activity feed as "Zapier notification failed" and does not break anything. Call timeout is 5 seconds. Zapier's trial limits emails per day, so avoid "Send test event" loops.

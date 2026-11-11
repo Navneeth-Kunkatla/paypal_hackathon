@@ -11,7 +11,7 @@ collections loop for them.
 ## What it does
 
 1. **Job done.** A task is marked complete in the tool the freelancer already
-   uses (Trello, Notion, Google Sheets). Zapier posts it to Settle. The
+   uses (a Zapier Table; Trello or Google Sheets also work). Zapier posts it to Settle. The
    freelancer can also just type: "Invoice Acme $1,200 for the logo, due in 14
    days."
 2. **Agent drafts the invoice.** Gemini, using the PayPal Agent Toolkit, builds
@@ -21,10 +21,11 @@ collections loop for them.
    the limit on its own.
 4. **Send.** PayPal sends the invoice. Settle shows the pay link and QR code.
 5. **Chase.** When an invoice goes overdue, the agent picks the reminder tone
-   (friendly, firm, final) from the client's history and sends it through
+   (friendly, firm, final) by days overdue and sends it through
    PayPal.
-6. **Paid.** PayPal's webhook tells Settle. The dashboard updates, and Zapier
-   notifies the freelancer (Slack, email or a sheet row).
+6. **Paid.** While the dashboard is open it polls PayPal and sees the paid
+   status (a signature-verified webhook route also exists, but the live site
+   uses polling). The dashboard updates, and Zapier notifies the freelancer (Slack, email or a sheet row).
 7. **Ask your money.** Chat questions like "who owes me the most?" answered
    from live PayPal data.
 
@@ -43,7 +44,7 @@ collections loop for them.
 | Agent | Vercel AI SDK + Gemini | Toolkit has a ready adapter |
 | PayPal | `@paypal/agent-toolkit` (invoices, reporting, disputes), sandbox | Official, 20 invoice tools |
 | Data | PayPal is the source of truth; a small local activity log | No database to run |
-| Dashboard | AG Grid Community | Sponsor prize, low risk |
+| Dashboard | AG Grid Community (invoices and clients) | Sponsor prize, low risk |
 | Automation | Zapier: inbound "job done" hook, outbound "paid" hook | User request |
 | API testing | Postman collection and environment in `postman/` | User request, Postman judge |
 | Hosting | Render | Sponsor prize, gives judges a live URL |

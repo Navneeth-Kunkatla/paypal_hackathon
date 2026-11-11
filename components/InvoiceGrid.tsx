@@ -112,8 +112,9 @@ const rank = (i: Invoice) => (i.status === "DRAFT" ? 0 : 1);
 export default function InvoiceGrid({ invoices, act, pending, open, onChase, chasing }: { invoices: Invoice[]; act: Ctx["act"]; pending: Set<string>; open: Ctx["open"]; onChase: () => void; chasing: boolean }) {
   const overdue = invoices.filter((i) => i.daysOverdue > 0).length;
   // Default order: drafts first, then most overdue. Users can re-sort via headers.
+  // Cancelled invoices need no action, so they are left out of the working list.
   const rows = useMemo(
-    () => [...invoices].sort((a, b) => rank(a) - rank(b) || b.daysOverdue - a.daysOverdue),
+    () => invoices.filter((i) => i.status !== "CANCELLED").sort((a, b) => rank(a) - rank(b) || b.daysOverdue - a.daysOverdue),
     [invoices],
   );
   const cols = useMemo<ColDef<Invoice>[]>(() => [

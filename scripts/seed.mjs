@@ -128,7 +128,8 @@ async function main() {
     return;
   }
 
-  const have = new Set(existing.map((i) => i.detail.reference));
+  // a CANCELLED seed invoice keeps its tag but no longer counts as present
+  const have = new Set(existing.filter((i) => i.status !== "CANCELLED").map((i) => i.detail.reference));
   console.log(row(["#", "client", "kind", "action", "invoice no.", "status"]));
   for (const s of SEED) {
     const ref = `${TAG}${s.n}`;

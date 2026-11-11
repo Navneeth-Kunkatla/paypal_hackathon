@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { agentConfig, keysMissing } from "@/lib/agent";
+import { getEvents } from "@/lib/store";
 import { listInvoices } from "@/lib/paypal";
 
 export async function POST() {
@@ -12,11 +13,18 @@ export async function POST() {
     const lines = overdue
       .map((i) => `- id ${i.id}, number ${i.number}, client ${i.clientName}, ${i.amount} ${i.currency}, ${i.daysOverdue} days overdue`)
       .join("\n");
+    const startedAt = new Date().toISOString();
     const { text } = await generateText({
       ...agentConfig(),
       prompt: `These invoices are overdue:\n${lines}\nSend each a reminder using the reminder tool with a short custom note. Tone by age: 1-7 days friendly, 8-21 firm, over 21 final notice. Then summarise what you did.`,
     });
-    return Response.json({ ok: true, reminded: overdue.length, summary: text });
+    // count reminders the tool actually sent during this run, not what the model claims
+    const reminded = getEvents().filter((e) => e.kind === "reminded" && e.at >= startedAt).length;
+    return Response.json({
+      ok: true,
+      reminded,
+      summary: `Sent ${reminded} of ${overdue.length} reminders. ${text}`,
+    });
   } catch (e) {
     return Response.json({ error: e instanceof Error ? e.message : "Chase failed" }, { status: 500 });
   }
