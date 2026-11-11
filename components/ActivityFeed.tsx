@@ -26,7 +26,7 @@ export default function ActivityFeed({ events }: { events: ActivityEvent[] }) {
                 <span aria-hidden="true" className="mt-[5px] h-2 w-2 flex-none rounded-full" style={{ background: k.dot }} />
                 <div className="min-w-0 flex-1">
                   <p>
-                    <span className="font-semibold">{k.label}</span> {e.text}
+                    {!e.text.startsWith(k.label) && <span className="font-semibold">{k.label} </span>}{e.text}
                   </p>
                   <time dateTime={e.at} className="num text-xs" style={{ color: "var(--muted)" }}>
                     {new Date(e.at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}

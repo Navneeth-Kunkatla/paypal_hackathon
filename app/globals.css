@@ -122,6 +122,7 @@ a:hover { color: var(--accent-hover); }
   align-items: center;
   justify-content: center;
   min-height: 36px;
+  line-height: 20px; /* grid cells set line-height to the row height, which stretched buttons */
   border: 1px solid var(--outline);
   background: var(--surface);
   color: var(--fg);
