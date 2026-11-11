@@ -1,7 +1,7 @@
 # Settle
 
 Demo video: [ADD YOUTUBE LINK]
-Live demo: [ADD RENDER URL]
+Live demo: https://settle-8njj.onrender.com (free tier: the first load can take about a minute)
 
 Freelancers finish the work, then lose hours writing invoices and chasing late payments. Chasing is awkward, so many just wait. Settle is an agent that runs the whole collections loop and actually transacts: it drafts a PayPal invoice from a plain sentence or a "job done" event, sends it within a spending limit you set, holds anything bigger for one-click approval, chases overdue invoices with the right tone, and tells you when you are paid. Everything runs against the PayPal sandbox.
 
