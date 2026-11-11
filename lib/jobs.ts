@@ -16,7 +16,7 @@ export const JobBody = z.object({
 export async function runJob(j: z.infer<typeof JobBody>): Promise<string> {
   addEvent("info", `Job completed via Zapier: ${j.description} for ${j.client_name}`);
   const { text } = await generateText({
-    ...agentConfig(),
+    ...agentConfig("zapier"),
     prompt: `A job was just marked complete in the freelancer's task tool. Create an invoice and send it: client ${j.client_name} ${j.client_email}, ${j.amount} ${j.currency.toUpperCase()} for "${j.description}", due in ${j.due_days} days.`,
   });
   return text;

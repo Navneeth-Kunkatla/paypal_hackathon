@@ -9,6 +9,7 @@ const NAV = [
   { href: "/", label: "Invoices" },
   { href: "/clients", label: "Clients" },
   { href: "/automations", label: "Automations" },
+  { href: "/audit", label: "Audit trail" },
 ];
 
 export default function Header() {
@@ -39,7 +40,7 @@ export default function Header() {
       const r = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ autoSendLimit: n } satisfies Settings),
+        body: JSON.stringify({ autoSendLimit: n } satisfies Partial<Settings>),
       });
       if (r.ok) { saved.current = limit; setErr(""); }
       else setErr("Could not save the limit.");
@@ -50,13 +51,13 @@ export default function Header() {
 
   return (
     <header data-bg style={{ background: "var(--surface)", color: "var(--fg)", borderBottom: "1px solid var(--hair)" }}>
-      <div className="mx-auto flex w-full max-w-[1296px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:px-8">
+      <div className="mx-auto flex w-full max-w-[1296px] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3.5 sm:px-8">
         <div className="flex items-center gap-2.5">
           <svg aria-hidden="true" width="28" height="28" viewBox="0 0 28 28">
             <rect width="28" height="28" rx="8" fill="#0070BA" />
             <path d="M8 14.5l4 4 8-9" fill="none" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="display text-xl font-bold tracking-tight">Settle</span>
+          <span className="display text-xl font-bold tracking-tight">Countersign</span>
         </div>
         <span className="rounded-full border px-2.5 py-0.5 text-xs font-medium" style={{ borderColor: "var(--outline)", color: "var(--accent-hover)" }}>PayPal Sandbox</span>
         <nav aria-label="Main" className="flex gap-1">
@@ -67,7 +68,7 @@ export default function Header() {
                 key={n.href}
                 href={n.href}
                 aria-current={cur ? "page" : undefined}
-                className="inline-flex min-h-9 items-center rounded-lg px-3 text-sm font-semibold no-underline"
+                className="inline-flex min-h-9 items-center rounded-lg px-2.5 text-sm font-semibold no-underline sm:px-3"
                 style={cur ? { background: "var(--surface-2)", color: "var(--fg)", boxShadow: "inset 0 -2px 0 var(--accent)" } : { color: "var(--muted)" }}
               >
                 {n.label}

@@ -7,9 +7,9 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const grotesk = Space_Grotesk({ variable: "--font-space-grotesk", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Settle: the get-paid agent for freelancers",
+  title: "Countersign: PayPal agent with a mandate",
   description:
-    "An AI agent that creates, sends and chases PayPal invoices so freelancers get paid without the awkward follow-ups.",
+    "An AI agent that drafts, sends and chases PayPal invoices inside a mandate you set, with an audit trail of every decision. The agent acts inside your mandate. You countersign the rest.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

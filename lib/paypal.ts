@@ -1,4 +1,6 @@
-import type { Invoice, InvoiceStatus } from "./types";
+import type { AuditEntry, Invoice, InvoiceStatus } from "./types";
+import { decideReminder, decideSend } from "./policy";
+import { addAudit, addEvent, getAudit, getSettings } from "./store";
 
 const BASE = "https://api-m.sandbox.paypal.com";
 
@@ -112,17 +114,18 @@ export async function getInvoice(id: string): Promise<Invoice> {
   return toInvoice(await pp(`/v2/invoicing/invoices/${encodeURIComponent(id)}`));
 }
 
-export async function sendInvoice(id: string): Promise<void> {
+// Private on purpose: the only way to send or remind is guardedSend / guardedRemind below.
+async function sendInvoice(id: string): Promise<void> {
   await pp(`/v2/invoicing/invoices/${encodeURIComponent(id)}/send`, {
     method: "POST",
     body: JSON.stringify({ send_to_recipient: true }),
   });
 }
 
-export async function remindInvoice(id: string): Promise<void> {
+async function remindInvoice(id: string, msg: { subject?: string; note?: string } = {}): Promise<void> {
   await pp(`/v2/invoicing/invoices/${encodeURIComponent(id)}/remind`, {
     method: "POST",
-    body: JSON.stringify({ send_to_recipient: true }),
+    body: JSON.stringify({ send_to_recipient: true, ...msg }),
   });
 }
 
@@ -144,11 +147,15 @@ export async function getQr(id: string): Promise<string | null> {
 }
 
 // Drafts cannot be cancelled, only deleted.
-export async function cancelInvoice(id: string, status: InvoiceStatus): Promise<void> {
+async function cancelInvoice(id: string, status: InvoiceStatus): Promise<void> {
   const path = `/v2/invoicing/invoices/${encodeURIComponent(id)}`;
   if (status === "DRAFT") await pp(path, { method: "DELETE" });
   else await pp(`${path}/cancel`, { method: "POST", body: JSON.stringify({ send_to_invoicer: false, send_to_recipient: false }) });
 }
+
+// detail.note is shown to the client and in PayPal's invoice email (limit 4000 chars)
+const NOTE =
+  "Prepared by Countersign, the sender's assistant, on behalf of the sender. PayPal never asks you to call a phone number or share a password to pay or dispute an invoice.";
 
 export async function createInvoice(i: {
   clientName: string;
@@ -161,10 +168,93 @@ export async function createInvoice(i: {
   const j = (await pp("/v2/invoicing/invoices", {
     method: "POST",
     body: JSON.stringify({
-      detail: { currency_code: i.currency, payment_term: { due_date: i.dueDate } },
+      detail: { currency_code: i.currency, payment_term: { due_date: i.dueDate }, note: NOTE },
       primary_recipients: [{ billing_info: { business_name: i.clientName, email_address: i.clientEmail } }],
       items: [{ name: i.description, quantity: "1", unit_amount: { currency_code: i.currency, value: i.amount.toFixed(2) } }],
     }),
   })) as { href: string };
   return getInvoice(j.href.split("/").pop()!);
+}
+
+type Actor = AuditEntry["actor"];
+const short = (e: unknown) => (e instanceof Error ? e.message : "Failed").slice(0, 160);
+
+// The single enforcement path: every send, reminder and cancel goes through these three, and each attempt is audited.
+// An "allowed" send is audited after PayPal succeeds; a PayPal failure is audited as blocked / "PayPal error" and rethrown.
+export async function guardedSend(id: string, actor: Actor) {
+  const inv = await getInvoice(id);
+  const m = getSettings();
+  let isNewClient = false;
+  if (m.newClientNeedsApproval) {
+    const email = inv.clientEmail.toLowerCase();
+    isNewClient = !(await listInvoices()).some(
+      (o) => o.id !== id && o.clientEmail.toLowerCase() === email && o.status !== "DRAFT" && o.status !== "CANCELLED",
+    );
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const sentTodayTotal = getAudit()
+    .filter((a) => a.action === "send_invoice" && a.verdict === "allowed" && a.actor !== "human" && a.at.startsWith(today))
+    .reduce((t, a) => t + (a.amount ?? 0), 0);
+  const d = decideSend({ actor, amount: inv.amount, currency: inv.currency, isNewClient, sentTodayTotal }, m);
+  const entry = {
+    actor, action: "send_invoice" as const, invoiceId: id, invoiceNumber: inv.number,
+    client: inv.clientName || inv.clientEmail, amount: inv.amount, currency: inv.currency,
+  };
+  const label = inv.number || id;
+  if (d.verdict !== "allowed") {
+    addAudit({ ...entry, ...d });
+    addEvent("blocked", `Held ${label} (${inv.currency} ${inv.amount}) for approval: ${d.rule}. ${d.detail}`, id);
+    return { ...d, invoice: inv };
+  }
+  try {
+    await sendInvoice(id);
+  } catch (e) {
+    addAudit({ ...entry, verdict: "blocked", rule: "PayPal error", detail: short(e) });
+    throw e;
+  }
+  addAudit({ ...entry, ...d });
+  addEvent("sent", actor === "human" ? `Approved and sent ${label}` : `Sent ${label} to ${entry.client}`, id);
+  return { ...d, invoice: inv };
+}
+
+export async function guardedRemind(id: string, actor: Actor, msg: { subject?: string; note?: string } = {}) {
+  const inv = await getInvoice(id);
+  const since = Date.now() - 86_400_000;
+  const remindersLast24h = getAudit().filter(
+    (a) => a.invoiceId === id && a.action === "send_reminder" && a.verdict === "allowed" && Date.parse(a.at) >= since,
+  ).length;
+  const d = decideReminder({ actor, remindersLast24h }, getSettings());
+  const entry = {
+    actor, action: "send_reminder" as const, invoiceId: id, invoiceNumber: inv.number,
+    client: inv.clientName || inv.clientEmail, amount: inv.amount, currency: inv.currency,
+  };
+  const label = inv.number || id;
+  if (d.verdict !== "allowed") {
+    addAudit({ ...entry, ...d });
+    addEvent("blocked", `Reminder for ${label} not sent: ${d.rule}. ${d.detail}`, id);
+    return { ...d, invoice: inv };
+  }
+  try {
+    await remindInvoice(id, msg);
+  } catch (e) {
+    addAudit({ ...entry, verdict: "blocked", rule: "PayPal error", detail: short(e) });
+    throw e;
+  }
+  addAudit({ ...entry, ...d });
+  addEvent("reminded", actor === "human" ? `Sent a reminder for ${label}` : "Sent a payment reminder", id);
+  return { ...d, invoice: inv };
+}
+
+// No policy clause: cancelling moves no money out. Recorded so the trail is complete.
+export async function guardedCancel(id: string, actor: Actor) {
+  const inv = await getInvoice(id);
+  await cancelInvoice(id, inv.status);
+  addAudit({
+    actor, action: "cancel_invoice", verdict: "allowed",
+    rule: actor === "human" ? "Human action" : "Within mandate",
+    detail: `${inv.status === "DRAFT" ? "Deleted draft" : "Cancelled invoice"} ${inv.number || id}`,
+    invoiceId: id, invoiceNumber: inv.number, client: inv.clientName || inv.clientEmail, amount: inv.amount, currency: inv.currency,
+  });
+  addEvent("info", `${inv.status === "DRAFT" ? "Deleted draft" : "Cancelled invoice"} ${inv.number || id}`, id);
+  return inv;
 }

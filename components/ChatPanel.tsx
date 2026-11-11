@@ -25,7 +25,7 @@ export default function ChatPanel({ onFinish }: { onFinish: () => void }) {
     <section aria-labelledby="chat-h" className="card flex h-[34rem] max-h-[80vh] flex-col overflow-hidden">
       <div className="card-h">
         <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ background: "var(--accent)" }} />
-        <h2 id="chat-h">Ask Settle</h2>
+        <h2 id="chat-h">Ask Countersign</h2>
       </div>
       <div role="log" aria-live="polite" aria-label="Conversation" className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
         {messages.length === 0 && (

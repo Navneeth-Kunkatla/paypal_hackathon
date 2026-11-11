@@ -43,3 +43,6 @@ next-env.d.ts
 
 # local demo recordings
 demo-clips/
+
+# private research notes
+research/

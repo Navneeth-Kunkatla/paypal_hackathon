@@ -101,7 +101,7 @@ export default function Automations() {
       <h1 className="text-2xl font-bold">Automations</h1>
 
       <Card id="in-h" title="When a job is done, invoice it" pill={<Status on={flags && flags.jobsHook} yes="Connected-ready" no="Not configured" />}>
-        <p>Zapier watches your task tool and posts each finished job to Settle. The agent then drafts the invoice and sends it, or holds it for your approval above your limit.</p>
+        <p>Zapier watches your task tool and posts each finished job to Countersign. The agent then drafts the invoice and sends it, or holds it for your approval above your limit.</p>
         <Url label="endpoint URL" value={origin && `${origin}/api/jobs`} />
         <p>Send a POST with header <code>x-settle-secret</code> (your ZAPIER_HOOK_SECRET) and JSON fields: <code>client_name</code>, <code>client_email</code>, <code>amount</code>, <code>description</code>, <code>due_days</code>, <code>currency</code>.</p>
         <form onSubmit={sendJob} className="flex flex-col gap-3" aria-label="Send a test job">
@@ -120,7 +120,7 @@ export default function Automations() {
       </Card>
 
       <Card id="out-h" title="When an invoice is paid, tell my tools" pill={<Status on={flags && flags.paidHook} yes="Connected" no="Not configured" />}>
-        <p>When PayPal reports a payment, Settle posts JSON to your Zapier Catch Hook (ZAPIER_PAID_HOOK_URL): <code>event</code> (&quot;invoice.paid&quot;), <code>invoiceId</code>, <code>number</code>, <code>client</code>, <code>amount</code>, <code>currency</code> and <code>text</code>. Use it for Slack, email or a sheet row.</p>
+        <p>When PayPal reports a payment, Countersign posts JSON to your Zapier Catch Hook (ZAPIER_PAID_HOOK_URL): <code>event</code> (&quot;invoice.paid&quot;), <code>invoiceId</code>, <code>number</code>, <code>client</code>, <code>amount</code>, <code>currency</code> and <code>text</code>. Use it for Slack, email or a sheet row.</p>
         <div><button className="btn" onClick={sendPaid} disabled={paidBusy} aria-busy={paidBusy}>{paidBusy ? "Sending…" : "Send test event"}</button></div>
         {out(paidOut)}
       </Card>
@@ -128,7 +128,7 @@ export default function Automations() {
       <Card id="wh-h" title="Instant payment updates" pill={<Status on={flags && flags.paypalWebhook} yes="Connected" no="Not configured" />}>
         <p>Add this URL as a webhook in your PayPal app and subscribe to <code>INVOICING.INVOICE.PAID</code>. Then payments show up the moment they happen.</p>
         <Url label="webhook URL" value={origin && `${origin}/api/webhooks/paypal`} />
-        <p style={{ color: "var(--muted)" }}>Without it, Settle still detects payment by polling every 10 seconds.</p>
+        <p style={{ color: "var(--muted)" }}>Without it, Countersign still detects payment by polling every 10 seconds.</p>
       </Card>
 
       <Card id="rule-h" title="Approval rule">

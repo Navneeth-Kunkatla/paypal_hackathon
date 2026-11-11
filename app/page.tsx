@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { ActivityEvent, Health, Invoice } from "@/lib/types";
 import ActivityFeed from "@/components/ActivityFeed";
@@ -117,6 +118,7 @@ export default function Home() {
           <aside aria-label="Agent" className="flex min-w-0 basis-[360px] flex-1 flex-col gap-5">
             <ChatPanel onFinish={refresh} />
             <ActivityFeed events={events} />
+            <Link href="/audit" className="text-sm font-medium">See why in the audit trail</Link>
           </aside>
         </div>
       </main>

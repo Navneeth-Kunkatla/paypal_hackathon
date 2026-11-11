@@ -46,8 +46,28 @@ export type ActivityEvent = {
   invoiceId?: string;
 };
 
+// The mandate: what the agent may do without asking. Enforced in code (lib/policy.ts), never by the prompt.
 export type Settings = {
   autoSendLimit: number; // agent may send invoices at or below this amount without approval
+  dailyCap: number; // most the agent may send in total per UTC day without approval
+  newClientNeedsApproval: boolean; // first invoice to a client always waits for a human
+  maxReminders: number; // most reminders the agent may send per invoice per 24 hours
+};
+
+// One row per money-moving action that was attempted, whoever attempted it.
+export type AuditEntry = {
+  id: string;
+  at: string; // ISO timestamp
+  actor: "agent" | "human" | "zapier";
+  action: "send_invoice" | "send_reminder" | "cancel_invoice" | "change_mandate";
+  verdict: "allowed" | "held" | "blocked"; // held = left as a draft for approval; blocked = refused
+  rule: string; // the mandate clause that decided, e.g. "Per-invoice limit", "Human approval"
+  detail: string; // plain sentence, e.g. "USD 1800.00 is over the 500 per-invoice limit"
+  invoiceId?: string;
+  invoiceNumber?: string;
+  client?: string;
+  amount?: number;
+  currency?: string;
 };
 
 export type Health = {
@@ -74,4 +94,6 @@ export type Health = {
 // POST /api/automations/test-paid -> { ok: true, result: "sent" | "unconfigured" | "failed" }
 // GET  /api/clients               -> { clients: Client[] }   per-client roll-up of PayPal invoices
 // POST /api/clients/summary       -> { summary: string }   one Gemini call over the client stats (503 if keys missing, 502 on model error)
+// GET  /api/audit                 -> { entries: AuditEntry[] }  newest first, capped at 500
+// GET  /api/audit?format=csv      -> text/csv attachment of the same rows
 // Errors: non-2xx with { error: string }

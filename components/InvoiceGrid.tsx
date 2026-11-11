@@ -82,7 +82,7 @@ function NoRows(props: CustomNoRowsOverlayProps) {
   const steps = [
     ["Ask the agent", "Type something like \"Invoice Acme $400 for the logo, due in 14 days.\""],
     ["Approve", "Invoices over your auto-send limit wait for one click from you."],
-    ["Get paid", "Settle sends the PayPal invoice, chases late ones and tells you when it is paid."],
+    ["Get paid", "Countersign sends the PayPal invoice, chases late ones and tells you when it is paid."],
   ];
   return (
     <div className="px-4 py-6 text-left">
