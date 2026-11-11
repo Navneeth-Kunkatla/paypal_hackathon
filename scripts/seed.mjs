@@ -1,4 +1,4 @@
-// Demo-data seed for Settle. Plain Node 18+, no dependencies. PayPal SANDBOX only.
+// Demo-data seed for Countersign. Plain Node 18+, no dependencies. PayPal SANDBOX only.
 //   node scripts/seed.mjs             create missing seed invoices
 //   node scripts/seed.mjs --dry-run   print what would be created
 //   node scripts/seed.mjs --reset     cancel (sent) / delete (draft) invoices tagged settle-seed-*

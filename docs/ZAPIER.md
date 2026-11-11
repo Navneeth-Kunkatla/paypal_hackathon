@@ -1,13 +1,13 @@
 # Zapier setup
 
-Two Zaps, both live and tested on the demo. Webhooks by Zapier is a premium Zapier app: it needs a paid plan or works on the 14-day trial.
+Countersign uses two Zaps, both live and tested on the demo. The Zapier table name "Settle Jobs" and the header `x-settle-secret` keep the project's working name. Webhooks by Zapier is a premium Zapier app: it needs a paid plan or works on the 14-day trial.
 
 | Zap | Direction | Needs a public URL? |
 |---|---|---|
-| A. Job done -> Settle invoice | Zapier calls Settle (`POST /api/jobs`) | Yes. Use your Render URL (or a tunnel). |
-| B. Invoice paid -> notification | Settle calls Zapier (`ZAPIER_PAID_HOOK_URL`) | No. Works from localhost. |
+| A. Job done -> Countersign invoice | Zapier calls Countersign (`POST /api/jobs`) | Yes. Use your Render URL (or a tunnel). |
+| B. Invoice paid -> notification | Countersign calls Zapier (`ZAPIER_PAID_HOOK_URL`) | No. Works from localhost. |
 
-Set `ZAPIER_HOOK_SECRET` in your environment first (any long random string). Settle returns 503 if it is unset.
+Set `ZAPIER_HOOK_SECRET` in your environment first (any long random string). Countersign returns 503 if it is unset.
 
 ## Zap A: job marked done creates and sends an invoice
 
@@ -29,7 +29,7 @@ Set `ZAPIER_HOOK_SECRET` in your environment first (any long random string). Set
 
    - Headers: `x-settle-secret` = the value of `ZAPIER_HOOK_SECRET`.
 3. Test the action. Expected: `{"ok":true,"summary":"..."}`. A 401 means the secret does not match; a 400 lists the invalid fields.
-4. Turn the Zap on. Amounts over the auto-send limit stay as drafts and appear in the dashboard for approval.
+4. Turn the Zap on. Jobs from Zapier go through the same mandate as the chat. An invoice outside it (over the per-invoice limit, over the daily cap, and so on) stays a draft for approval in the dashboard, and every attempt appears in the Audit trail with the actor "Zapier".
 
 The same call from a terminal:
 
@@ -42,10 +42,10 @@ curl -X POST "$APP/api/jobs" -H "Content-Type: application/json" -H "x-settle-se
 
 1. Trigger: "Webhooks by Zapier", event "Catch Hook". Copy the Custom Webhook URL (`https://hooks.zapier.com/hooks/catch/...`).
 2. Put that URL in `ZAPIER_PAID_HOOK_URL` (`.env.local` locally, or the Render dashboard) and restart.
-3. Make Settle send one sample: pay a sandbox invoice (see README, "Try it"), or open the dashboard after paying. Back in Zapier, click "Test trigger" and pick the request.
+3. Make Countersign send one sample: pay a sandbox invoice (see the README, "Run it locally"), or open the dashboard after paying. Back in Zapier, click "Test trigger" and pick the request.
 4. Action: "Email by Zapier" is what the demo uses (to the freelancer, with `text` as the body). Others work too, for example Slack "Send Channel Message" with `text`, Gmail "Send Email", or Google Sheets "Create Spreadsheet Row".
 
-Payload Settle POSTs (JSON, from `lib/paid.ts` and `lib/zapier.ts`):
+Payload Countersign POSTs (JSON, from `lib/paid.ts` and `lib/zapier.ts`):
 
 ```json
 {
@@ -59,4 +59,4 @@ Payload Settle POSTs (JSON, from `lib/paid.ts` and `lib/zapier.ts`):
 }
 ```
 
-It fires once per invoice, when Settle first sees it become PAID (dashboard polling every 10 seconds, or the PayPal webhook). A failed call is logged in the activity feed as "Zapier notification failed" and does not break anything. Call timeout is 5 seconds. Zapier's trial limits emails per day, so avoid "Send test event" loops.
+It fires once per invoice, when Countersign first sees it become PAID (dashboard polling every 10 seconds, or the PayPal webhook). A failed call is logged in the activity feed as "Zapier notification failed" and does not break anything. Call timeout is 5 seconds. Zapier's trial limits emails per day, so avoid "Send test event" loops.
