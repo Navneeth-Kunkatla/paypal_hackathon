@@ -8,7 +8,7 @@ The open problem: PayPal's own `paypal/agent-toolkit` has open issues asking for
 
 Live demo: https://settle-8njj.onrender.com (free tier: the first load can take about a minute). PayPal sandbox only.
 
-Demo video: [ADD YOUTUBE LINK]
+Demo video: https://youtu.be/pZGlblDfXbg
 
 ## How the mandate works
 
